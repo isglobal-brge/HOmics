@@ -1,0 +1,29 @@
+Package: HOmics
+Title: Hierarchical omics
+Version: 0.0.0.9000
+Authors@R: c(person("Lara", "Nonell", email = "lnonell@imim.cat", role = c("aut", "cre")),
+  person("Juan R.", "Gonzalez", ,"juanr.gonzalez@isglobal.org", role = "aut"))
+Description: hierachical omic association.
+Depends: R (>= 3.5)
+SystemRequirements: JAGS 4.x.y
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 6.1.1.9000
+Imports:
+    Biobase,
+    MCMCvis,
+    parallel,
+    doParallel,
+    foreach,
+    minfi,
+    rjags,
+    dplyr,
+    purrr,
+    ggplot2
+Collate: 
+    'hmodel.R'
+    'HOmics.R'
+    'HOmics.meth.R'
+    'get.signif.R'
+    'plot.res.R'
