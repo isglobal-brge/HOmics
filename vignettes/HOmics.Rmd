@@ -20,7 +20,7 @@ abstract: To be supplied
 ---
 
 ```{r style, echo = FALSE, results = 'asis'}
-options(width=400)
+options(width=200)
 knitr::opts_chunk$set(cache=TRUE, fig.align = TRUE, 
                       warning = FALSE,
                       message = FALSE, comment = "")
@@ -28,7 +28,10 @@ knitr::opts_chunk$set(cache=TRUE, fig.align = TRUE,
 
 # Introduction
 
-**HOmics** package is designed to analyze *omic* data by incorporating biological knowledge aiming to improve effect estimates obtained from single association analyses. Instead of assuming that every *omic* feature is a priori equally likely associated with the outcome of interest, one can quantitatively incorporate existing information about the features into the analysis. The ultimate goal of this approach is to obtain a better rank of features by combining both, the effect estimates from the data and a priori biological knowledge. Next we illustrate some examples that include SNP association studies, where information about genic annotations can be incorporated in the analyses and epigenomic studies where relative position to the closest gene is incorporated for each CpG. 
+**HOmics** package is designed to analyze *omic* data by incorporating biological knowledge aiming to improve effect estimates obtained from single association analyses. Instead of assuming that every *omic* feature is a priori equally likely associated with the outcome of interest, one can quantitatively incorporate existing information about the features into the analysis. The ultimate goal of this approach is to obtain a better rank of features by combining both, the effect estimates from the data and a priori biological knowledge.
+The model is fitted in two levels, the first level is a regression model for the features, whose coefficients are adjusted in a second level using prior information.
+**HOmics** uses a Bayesian approach that needs the JAGS (Just Another Gibbs Sampler) environment to be installed. This can be easily done through this link: [http://mcmc-jags.sourceforge.net/](http://mcmc-jags.sourceforge.net/).
+Next We illustrate some examples that includes SNP association studies, where information about genic annotations can be incorporated in the analyses in a univariate or multivariate manner; epigenomic studies where relative position to the closest gene is incorporated for each CpG using bioconductor's standard classes and the last example, where we integrate gene expression with methylation data in the association to phenotype.
 
 The general idea is described in the following figure
 
@@ -43,7 +46,7 @@ library(dplyr)
 
 # SNP association analyses
 
-In the GWAS conext, each SNP is associated independetly with the phenotype of interest. However, this conventional approach ignores existing information about the analyzed SNPs and assumes that they are all equally likely to impact the phenotype. Instead, one can incorporate information about the SNPs into a hierarchical model, in an attempt to improve the ranking of the P values for association. There are several ways of incorporating a priori information. For instance, one can weight each SNP association p-value by how well it tags to SNPs that have been previously associated with our phenotype of interest as described in the GWAS catalog ([https://www.ebi.ac.uk/gwas/](https://www.ebi.ac.uk/gwas/)). The genetic distance to these SNPs can also be used. Another option is to incorporate existing information about the SNPs into a second-stage design matrix Z. This information could be: conservation, functional category, gene location, tagging or even linkage. Here we illustrate how genic location depicted in this figure can be used to improve single SNP assocation analyses:
+In the GWAS conext, each SNP is associated independently with the phenotype of interest. However, this conventional approach ignores existing information about the analyzed SNPs and assumes that they are all equally likely to impact the phenotype. Instead, one can incorporate information about the SNPs into a hierarchical model, in an attempt to improve the ranking of the p-values for association. There are several ways of incorporating a priori information. For instance, one can weight each SNP association p-value by how well it tags to SNPs that have been previously associated with our phenotype of interest as described in the GWAS catalog ([https://www.ebi.ac.uk/gwas/](https://www.ebi.ac.uk/gwas/)). The genetic distance to these SNPs can also be used. Another option is to incorporate existing information about the SNPs into a second-stage design matrix Z. This information could be: conservation, functional category, gene location, tagging or even linkage. Here we illustrate how genic location depicted in this figure can be used to improve single SNP assocation analyses:
 
 ![Genic annotation](SNP_position.png)
 
@@ -120,7 +123,7 @@ dim(Z)
 
 head(Z)
 
-sort(apply(Z,1,sum), decreasing = TRUE)
+head(sort(apply(Z,1,sum), decreasing = TRUE))
 ```
 
 Next code illustrates how to fit the hierachical model. We start by selecting from the omic matrix those features with annotated information
@@ -151,7 +154,7 @@ The results are provided as a tibble
 ```{r show_mod}
 mod
 ```
-To visualize probability intervals
+To visualize credible intervals
 
 ```{r plot_mod}
 plot.res(mod)
@@ -184,14 +187,33 @@ p <- ggplot(data=ans.odds) +
               arrow=arrow(length=unit(0.15,"cm"),
                           ends='both')) +
   geom_vline(linetype   ='dashed',  xintercept = 1) +
-  xlab ("OR 95 confidence interval") + 
+  xlab ("OR 95% confidence interval") + 
   theme(panel.border = element_blank(),
+        axis.text.y=element_text(size=6),
         axis.ticks.y = element_blank())
 p
 
 ```
 
-# Multivariate analysis
+and finally compare results, by selecting those significative by each method. Notice that objects are manipulated differently, as they are of different classes
+
+```{r compare results}
+res.homics <- mod[[1]]
+res.homics.sig <- res.homics %>% filter(sign(`97.5%`)== sign(`2.5%`), n.eff>200) %>% mutate(int.l =`97.5%`- `2.5%`) 
+res.homics.sig
+
+res.snpassoc <- ans.odds
+res.snpassoc.sig <- res.snpassoc[res.snpassoc$`p-value.log-additive`<0.05 & !is.na(res.snpassoc$`p-value.log-additive`),]
+res.snpassoc.sig$int.l <- res.snpassoc.sig$upper - res.snpassoc.sig$lower
+
+res.snpassoc.sig
+
+
+```
+
+Observe that significative SNPs associated to obesity are the same but the credible intervals (equivalent to confidence intervals) for **HOmics** approach are wider after including prior information. 
+
+# Multivariate SNP association analysis
 
 Instead of performing a univariate analysis for each feature, we can include all SNPs in a multivariate model to study the association with phenotype.
 For that, the aggregation matrix must be specified. In this case we will create a 1's matrix containing just one row representing a group and 73 columns, one for each SNP.
@@ -220,14 +242,14 @@ mod.multiv
 
 and we plot the coefficients of the multivariate model
 
-To visualize probability intervals
+To visualize credible intervals
 
 ```{r plot_multiv_mod}
 plot.res(mod.multiv)
 ```
 
 
-# CpG methylation analyses using biococnductor's classes
+# CpG methylation analyses using bioconductor's classes
 
 In methylomics, CpGs are studied individually in their association to phenotype. However, there is some information that can be added to the model such as their relative position to the gene. We could here perform a similar analysis to the one displayed in previous section but **HOmics** contains a specific function, **HOmics.meth()** that takes advantage of standard Bioconductor classes. 
 The function is prepared to process ExpressionSet (BioC) or GenomicRatioSet (minfi), standard classes when downloading GEO data using the GEOquery package. These objects have the following components:

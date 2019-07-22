@@ -1,4 +1,4 @@
-#' filters results using p-value thresholds
+#' filters results using parameter thresholds
 #'
 #' @param res resultslist
 #' @param param probability to filter with p.pos and p.neg
