@@ -40,8 +40,9 @@ plot.HOmics <- function (res, element = 1)
              axis.ticks.y = element_blank())
   } else { #odds ratio
     resi$feature <- factor(resi$feature, levels=sort(unique(resi$feature),decreasing = TRUE)) 
-    resi <- resi %>% mutate(coef.=ifelse(`97.5%` > 1 & `2.5%` > 1, "prot",
-                                         ifelse(`97.5%` < 1 & `2.5%` < 1,"risk","ns")))
+    resi <- resi %>% mutate(`log(OR)` = log(OR), `2.5%` = log(`2.5%`), `50%` = log(`50%`),`97.5%` = log(`97.5%`))
+    resi <- resi %>% mutate(coef.=ifelse(`97.5%` > 0 & `2.5%` > 0, "prot",
+                                         ifelse(`97.5%` < 0 & `2.5%` < 0,"risk","ns")))
     resi$'coef.' <- factor(resi$'coef.',levels=c("risk","ns","prot"))
     
     colors <- c("risk"="#00BA38","ns"="darkgrey","prot"="#F8766D")
@@ -51,7 +52,7 @@ plot.HOmics <- function (res, element = 1)
       geom_text(aes(x = `97.5%`, y = feature, label = n.eff, hjust = -0.3), 
                 color = "black", size = 2) +
       geom_vline(linetype = 'dashed', xintercept = 1) +
-      xlab ("OR 95% confidence interval (n.eff samples)") +
+      xlab ("log(OR) 95% credible interval (n.eff samples)") +
       scale_color_manual(values = colors) +
       theme(panel.border = element_blank(),
             axis.text.y = element_text(size = 6),

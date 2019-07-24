@@ -82,7 +82,7 @@ hmodel <- function(G, Z, cond, cont, covar.matrix=NULL, seed,
                               `50%` = exp(`50%`),
                              `97.5%` = exp(`97.5%`))
     }
-    summ <- summ %>% mutate(feature = rownames(Z)) %>% select(feature, mean:p.neg)
+    summ <- summ %>% mutate(feature = rownames(Z)) %>% select(feature, everything())
     
     return(summ)
 }
