@@ -280,13 +280,14 @@ cpg.models<- foreach(i=1:N,.packages=c("rjags","tidyverse","MCMCvis"),.export="h
       }  
     }
  }
-stopCluster(cl)
-
-names(cpg.models) <- gene.list[1:N]
-
-results<-cpg.models
-#results$call <- call
-class(results) <- "HOmics"
-return(results)  
+  stopCluster(cl)
+  
+  names(cpg.models) <- gene.list[1:N]
+  z <- list(results = cpg.models,
+            call = call,
+            univ = FALSE,
+            cont = cont)
+  class(z)<- "HOmics"
+  return(z)  
 }
 # ===============================================================================

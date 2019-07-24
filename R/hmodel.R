@@ -75,7 +75,13 @@ hmodel <- function(G, Z, cond, cont, covar.matrix=NULL, seed,
     
     summ <- MCMCsummary(samps, Rhat = TRUE, n.eff = TRUE, round = 2)
  
-    summ <- as_tibble(cbind(summ, p.pos, p.neg))
+    summ <- as_tibble(cbind(summ, p.pos, p.neg)) %>% select(-sd)
+    if(!cont){
+      summ <- summ %>% mutate(OR = exp(mean),
+                              `2.5%` = exp(`2.5%`),
+                              `50%` = exp(`50%`),
+                             `97.5%` = exp(`97.5%`))
+    }
     summ <- summ %>% mutate(feature = rownames(Z)) %>% select(feature, mean:p.neg)
     
     return(summ)

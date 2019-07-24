@@ -179,8 +179,11 @@ HOmics <- function(data.matrix, cond, z.matrix, covar.matrix = NULL, agg.matrix=
     names(g.models) <- rownames(agg.matrix)
     results<-g.models
   }  
- # results$call <- call
-  class(results)<-"HOmics"
-  return(results)  
+  z <- list(results = results,
+            call = call,
+            univ = univ,
+            cont = cont)
+  class(z)<- "HOmics"
+  return(z)  
 }
 # ===============================================================================

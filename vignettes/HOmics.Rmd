@@ -20,8 +20,9 @@ abstract: To be supplied
 ---
 
 ```{r style, echo = FALSE, results = 'asis'}
-options(width=200)
-knitr::opts_chunk$set(cache=TRUE, fig.align = TRUE, 
+
+knitr::opts_chunk$set(cache = TRUE, width = 120,
+                      fig.align = "left", out.width="98%", 
                       warning = FALSE,
                       message = FALSE, comment = "")
 ```
@@ -29,13 +30,17 @@ knitr::opts_chunk$set(cache=TRUE, fig.align = TRUE,
 # Introduction
 
 **HOmics** package is designed to analyze *omic* data by incorporating biological knowledge aiming to improve effect estimates obtained from single association analyses. Instead of assuming that every *omic* feature is a priori equally likely associated with the outcome of interest, one can quantitatively incorporate existing information about the features into the analysis. The ultimate goal of this approach is to obtain a better rank of features by combining both, the effect estimates from the data and a priori biological knowledge.
-The model is fitted in two levels, the first level is a regression model for the features, whose coefficients are adjusted in a second level using prior information.
+The model is fitted in two levels hierarchical model, the first level is a regression model for the features, whose coefficients are adjusted in a second level using prior information.
+
 **HOmics** uses a Bayesian approach that needs the JAGS (Just Another Gibbs Sampler) environment to be installed. This can be easily done through this link: [http://mcmc-jags.sourceforge.net/](http://mcmc-jags.sourceforge.net/).
+
+
 Next We illustrate some examples that includes SNP association studies, where information about genic annotations can be incorporated in the analyses in a univariate or multivariate manner; epigenomic studies where relative position to the closest gene is incorporated for each CpG using bioconductor's standard classes and the last example, where we integrate gene expression with methylation data in the association to phenotype.
 
 The general idea is described in the following figure
 
 ![Hierarchical model](Figure1.png)
+
 
 
 ```{r load}
@@ -56,7 +61,7 @@ Let us illustrate how to do the analyses by using a real data set on obesity. We
 
 
 ```{r load_data}
-load("../data/obesity.Rdata")
+data("obesity", package="HOmics")
 ```
 
 We have two different objects, one for the genotypes and another for the phenotypic variables. Notice that the rownames of both objects perfectly match
@@ -71,7 +76,8 @@ Now the idea is to associate each SNP with the obesity status (0: normal, 1: obe
 
 ```{r rids}
 rsids <- colnames(snps)
-rsids
+head(rsids)
+length(rsids)
 ```
 
 One can locate SNPs in and around genes by using some Bioconductor's packages as follows:
@@ -103,7 +109,7 @@ mcols(loc)[subjectHits(m), "rs"] <-
 loc.unique <- unique(loc)
 ``` 
 
-This is the information we have after being processed the previous chunk, a GRanges object:
+This is the information we have after being processed the previous chunk, a GRanges object
 
 ```{r show_loc}
 loc.unique[,c("LOCATION","rs")]
@@ -149,18 +155,26 @@ mod <- HOmics(data.matrix = omic.matrix,
               covar.matrix = covar.matrix)
 ```
 
-The results are provided as a tibble
+The results are provided as an object of class *HOmics*
 
 ```{r show_mod}
-mod
+print(mod)
 ```
+Results can be extracted using attribute results
+
+```{r mod_resuts}
+mod$results
+```
+
+which is a tibble.
+
 To visualize credible intervals
 
 ```{r plot_mod}
-plot.res(mod)
+plot(mod)
 ```
 
-We then can compare with the results obtained from single association analyses:
+We then can compare with the results obtained from single association analyses
 
 ```{r SNPassoc}
 library(SNPassoc)
@@ -198,8 +212,8 @@ p
 and finally compare results, by selecting those significative by each method. Notice that objects are manipulated differently, as they are of different classes
 
 ```{r compare results}
-res.homics <- mod[[1]]
-res.homics.sig <- res.homics %>% filter(sign(`97.5%`)== sign(`2.5%`), n.eff>200) %>% mutate(int.l =`97.5%`- `2.5%`) 
+res.homics <- mod$results[[1]]
+res.homics.sig <- res.homics %>% filter(`97.5%` < 1 & `2.5%` < 1, n.eff>200) %>% mutate(int.l =`97.5%`- `2.5%`) 
 res.homics.sig
 
 res.snpassoc <- ans.odds
@@ -216,11 +230,18 @@ Observe that significative SNPs associated to obesity are the same but the credi
 # Multivariate SNP association analysis
 
 Instead of performing a univariate analysis for each feature, we can include all SNPs in a multivariate model to study the association with phenotype.
-For that, the aggregation matrix must be specified. In this case we will create a 1's matrix containing just one row representing a group and 73 columns, one for each SNP.
+For that, the parameter agg.matrix must be specified with groups of features as depicted in the following figure
+
+```{r agg.matrix, out.width = "30%", echo = FALSE}
+knitr::include_graphics("agg.matrix.png")
+```
+
+In this case we will create a 1's matrix containing just one row representing a group and 73 columns, one for each SNP. We therefore consider all features included in this group g1
 
 ```{r multiv_mod}
 
 agg.matrix <- matrix(data=1,nrow=1,ncol=nrow(omic.matrix))
+
 rownames(agg.matrix) <-"g1"
 colnames(agg.matrix) <- rownames(omic.matrix)
 
@@ -230,22 +251,24 @@ mod.multiv <- HOmics(data.matrix = omic.matrix,
               covar.matrix = covar.matrix,
               agg.matrix = agg.matrix)
 
+print(mod.multiv)
+
 ```
+
+
 
 If we want to assess more groups, it should be specified in the aggregation matrix, with groups in the rows and features in the columns.
 
-The results are again provided as a tibble but it shows this time the coefficients for the multivariate model
+The results are again provided as an HOmics object, and results show this time the coefficients for the multivariate model
 
 ```{r show_multiv_mod}
-mod.multiv
+mod.multiv$results
 ```
 
-and we plot the coefficients of the multivariate model
-
-To visualize credible intervals
+and we plot the coefficients of the multivariate model to visualize credible intervals
 
 ```{r plot_multiv_mod}
-plot.res(mod.multiv)
+plot(mod.multiv)
 ```
 
 
@@ -260,7 +283,7 @@ The function is prepared to process ExpressionSet (BioC) or GenomicRatioSet (min
 
 The relative position of a CpG to the closest gene is in this case the prior information and it is directly extracted from the annotation data of the object.
 
-We will in this example assess an ExpressionSet, extracted from the GEO series GSE117929. Data was previously downloaded using package `r Biocpkg("GEOquery")` and accessible as data object in **HOmics**. `r Biocpkg("Biobase")` package is needed to manipulate ExpressionSet class objects.
+We will in this example assess an ExpressionSet, extracted from the GEO series GSE117929. Data was previously downloaded using package `r Biocpkg("GEOquery")` and is accessible as data object  as the data object *GSE117929* in **HOmics**. `r Biocpkg("Biobase")` package is needed to manipulate ExpressionSet class objects.
 
 GSE117929 contains a methylome-wide analysis of 37 samples of peripheral blood mononuclear cells of systemic sclerosis (N=18) and normal controls (N=19).
 
@@ -289,12 +312,10 @@ res.meth <- HOmics.meth(meth.data = GSE117929,
                    annot.gene.col = "UCSC_RefGene_Name",
                    annot.z.col = "UCSC_RefGene_Group",
                    annot.mult.sep = ";",
-                   z.matrix = NULL,
-                   pheno.covar.col = NULL,
                    gene.list = genes,
                    cores = 1)
 
-class(res.meth)
+print(res.meth)
 
 ```
 
@@ -302,7 +323,7 @@ Let us see the results
 
 ```{r model_res}
 
-res.meth[[1]]
+res.meth$results[[1]]
 
 ```
 
@@ -322,7 +343,7 @@ We finally plot 95% probability for the first model.
 
 ```{r plot_res}
 
-plot.res(res.meth)
+plot(res.meth)
 
 ```
 
@@ -337,7 +358,6 @@ res.meth.sex <- HOmics.meth(meth.data = GSE117929,
                    annot.gene.col = "UCSC_RefGene_Name",
                    annot.z.col = "UCSC_RefGene_Group",
                    annot.mult.sep = ";",
-                   z.matrix = NULL,
                    pheno.covar.col = "gender:ch1",
                    gene.list = genes,
                    cores = 1)
@@ -360,7 +380,85 @@ res.meth.f.sex.neg
 
 # Integration of *omics* data
 
-In this example, we will use GEO public data from a data superseries (GSE77276) containing methylation data (GSE77269) but also RNA-seq expression data (GSE77509) from the same set of samples. 
+In this example, we will use GEO public data from a data superseries (GSE117931) containing methylation data (GSE117929), used in previous example, but also expression data (GSE117928) from the same set of samples. 
+GSE117928 expression data was downloaded as an ExpressionSet using package `r Biocpkg("GEOquery")` and is accessible as the data object *GSE117928* in **HOmics**.
+
+We will integrate methylation of CpGs to the expression of the closest gene in the association of the phenotype variable, composed of 18 systemic sclerosis patients and 19 normal controls. Integration between gene expression and methylation is usually performed with correlations, as for instance, a hypermethylated site in the promoter of the gene can reduce its expression. The prior information will be in this case the correlation between the gene and the CpGs.
+
+We will take the same genes as in previous example and will construct a model for each of them.
+
+First we load the data
+
+```{r load_data_exp}
+
+library(Biobase)
+
+data("GSE117928", package="HOmics")
+
+GSE117928
+
+table(pData(GSE117928)$"diagnosis:ch1")
+
+```
+
+we need to extract and prepare the objects
+
+```{r integ_objects}
+
+genes <- c("CCR5","CXCR4")
+
+expression <- log2(exprs(GSE117928)+24)
+beta.values <- exprs(GSE117929)
+
+fdata.exp <- fData(GSE117928)
+fdata.meth <- fData(GSE117929)
+
+cond <- pData(GSE117928)$"diagnosis:ch1"
+table(cond)
+
+```
+
+
+Now, the construction of the hierarchical model for each gene will be done with a simple loop, where the z.matrix is constructed as a vector of correlations of the gene and CpGs in the region
+
+```{r integ model}
+
+n <- length(genes)
+n
+res.gene <- list()
+
+for(i in 1:n){
+  
+  gene <- genes[i]
+  gene.annot <- fdata.exp[grep(gene, fdata.exp$Symbol),c("ID","Symbol" )]
+  
+  if (nrow(gene.annot) > 1) {
+    gene.val <- apply(expression[gene.annot$ID,], 2, mean, na.rm = TRUE) 
+  } else {
+    gene.val <- expression[gene.annot$ID,]
+  }
+  
+  cpgs.gene<- fdata.meth[grep(gene, fdata.meth$"UCSC_RefGene_Name"), c("ID","UCSC_RefGene_Name" )]
+  cpgs.val <- beta.values[cpgs.gene$ID,]
+  
+  data.matrix <- as.matrix(t(gene.val))
+  rownames(data.matrix) <- gene
+  
+  z.matrix <- cor(gene.val,t(cpgs.val))
+  rownames(z.matrix) <-gene
+    
+  res.gene[[i]] <- HOmics(data.matrix = data.matrix, 
+                          z.matrix = abs(z.matrix),
+                          cond = cond)$results[[1]]
+  names(res.gene)[i] <- gene
+}
+
+res.gene.t <- bind_rows(res.gene,.id="group")
+
+res.gene.t
+
+```
+
 
 
 # Session info {.unnumbered}

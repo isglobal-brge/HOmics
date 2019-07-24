@@ -26,4 +26,5 @@ Collate:
     'HOmics.R'
     'HOmics.meth.R'
     'get.signif.R'
-    'plot.res.R'
+    'plot.HOmics.R'
+    'print.HOmics.R'
