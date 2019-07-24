@@ -41,11 +41,11 @@ plot.HOmics <- function (res, element = 1)
   } else { #odds ratio
     resi$feature <- factor(resi$feature, levels=sort(unique(resi$feature),decreasing = TRUE)) 
     resi <- resi %>% mutate(`log(OR)` = log(OR), `2.5%` = log(`2.5%`), `50%` = log(`50%`),`97.5%` = log(`97.5%`))
-    resi <- resi %>% mutate(coef.=ifelse(`97.5%` > 0 & `2.5%` > 0, "prot",
-                                         ifelse(`97.5%` < 0 & `2.5%` < 0,"risk","ns")))
-    resi$'coef.' <- factor(resi$'coef.',levels=c("risk","ns","prot"))
+    resi <- resi %>% mutate(coef.=ifelse(`97.5%` > 0 & `2.5%` > 0, "risk",
+                                         ifelse(`97.5%` < 0 & `2.5%` < 0,"prot","ns")))
+    resi$'coef.' <- factor(resi$'coef.',levels=c("prot","ns","risk"))
     
-    colors <- c("risk"="#00BA38","ns"="darkgrey","prot"="#F8766D")
+    colors <- c("prot"="#00BA38","ns"="darkgrey","risk"="#F8766D")
     p <- ggplot(data=resi) +
       geom_segment(aes(x=`2.5%`,y = feature, xend = `97.5%`,yend = feature, color = coef.),
                    arrow = arrow(length = unit(0.15,"cm"), ends = 'both')) +
