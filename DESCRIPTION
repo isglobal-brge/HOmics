@@ -25,6 +25,7 @@ Collate:
     'hmodel.R'
     'HOmics.R'
     'HOmics.meth.R'
-    'get.signif.R'
     'plot.HOmics.R'
     'print.HOmics.R'
+    'filter.HOmics.R'
+    'signif.HOmics.R'

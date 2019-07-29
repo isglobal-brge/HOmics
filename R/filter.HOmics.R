@@ -1,17 +1,18 @@
 #' filters results using parameter thresholds
 #'
-#' @param res resultslist
+#' @param res object of class HOmics, obtained from function HOmics
 #' @param param probability to filter with p.pos and p.neg
 #' @param threshold numerical, the threshold to select associated variables related to the specified param. Default is 0.95
 #' @param as.data.frame collapse as data.frame. Default = TRUE
 
 #' @import purrr
 #' @import dplyr
-#' @export get.signif
+#' @method filter HOmics
+#' @export 
 
 
 
-get.signif <- function (res, param = "p.pos", threshold = 0.95, as.data.frame = T)
+filter.HOmics <- function (res, param = "p.pos", threshold = 0.95, as.data.frame = T)
 {
   if (class(res)!="HOmics") stop("res must be an HOmics class object")
   
@@ -24,7 +25,7 @@ get.signif <- function (res, param = "p.pos", threshold = 0.95, as.data.frame = 
   if (!(is.null(threshold))) {
     cat("notice that this is a probability, so values above threshold will be selected")
     
-    res.f <- map(results, function(x) filter(x,!!as.name(param)>threshold))
+    res.f <- map(results, function(x) dplyr::filter(x,!!as.name(param)>threshold))
     res.f <- keep(res.f,function(x) nrow(x)>0)
     if (as.data.frame)  res.f <- bind_rows(res.f,.id="group")
     return(res.f)

@@ -1,6 +1,6 @@
-#' plots results in terms of 95CI
+#' plots results in terms of 95\% credible interval
 #'
-#' @param res resultslist
+#' @param res object of class HOmics, obtained from function HOmics
 #' @param element number or name of group of features to plot. Default = 1
 
 #' @import dplyr
@@ -21,7 +21,7 @@ plot.HOmics <- function (res, element = 1)
   resi <- results[[element]]
   
   cont <- res$cont
-  if (cont){
+  tit <- ifelse(cont,"95% credible interval (n.eff samples)","log-odds 95% credible interval (n.eff samples)")
     resi$feature <- factor(resi$feature, levels=sort(unique(resi$feature),decreasing = TRUE)) 
     resi <- resi %>% mutate(coef.=ifelse(sign(`97.5%`)== sign(`2.5%`), ifelse(sign(`2.5%`)==1,"pos","neg"),"ns"))
     resi$'coef.' <- factor(resi$'coef.',levels=c("neg","ns","pos"))
@@ -33,34 +33,12 @@ plot.HOmics <- function (res, element = 1)
         geom_text(aes(x = `97.5%`, y = feature, label = n.eff, hjust = -0.3), 
                  color = "black", size = 2) +
         geom_vline(linetype = 'dashed', xintercept = 0) +
-        xlab ("95% credible interval (n.eff samples)") +
+        xlab (tit) +
         scale_color_manual(values = colors) +
         theme(panel.border = element_blank(),
              axis.text.y = element_text(size = 6),
              axis.ticks.y = element_blank())
-  } else { #odds ratio
-    resi$feature <- factor(resi$feature, levels=sort(unique(resi$feature),decreasing = TRUE)) 
-    resi <- resi %>% mutate(`log(OR)` = log(OR), `2.5%` = log(`2.5%`), `50%` = log(`50%`),`97.5%` = log(`97.5%`))
-    resi <- resi %>% mutate(coef.=ifelse(`97.5%` > 0 & `2.5%` > 0, "risk",
-                                         ifelse(`97.5%` < 0 & `2.5%` < 0,"prot","ns")))
-    resi$'coef.' <- factor(resi$'coef.',levels=c("prot","ns","risk"))
-    
-    colors <- c("prot"="#00BA38","ns"="darkgrey","risk"="#F8766D")
-    p <- ggplot(data=resi) +
-      geom_segment(aes(x=`2.5%`,y = feature, xend = `97.5%`,yend = feature, color = coef.),
-                   arrow = arrow(length = unit(0.15,"cm"), ends = 'both')) +
-      geom_text(aes(x = `97.5%`, y = feature, label = n.eff, hjust = -0.3), 
-                color = "black", size = 2) +
-      geom_vline(linetype = 'dashed', xintercept = 1) +
-      xlab ("log(OR) 95% credible interval (n.eff samples)") +
-      scale_color_manual(values = colors) +
-      theme(panel.border = element_blank(),
-            axis.text.y = element_text(size = 6),
-            axis.ticks.y = element_blank())
-    
-    
-  }  
-    
+ 
   p
 
 }

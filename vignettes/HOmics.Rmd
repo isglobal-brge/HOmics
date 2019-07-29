@@ -21,8 +21,7 @@ abstract: To be supplied
 
 ```{r style, echo = FALSE, results = 'asis'}
 
-knitr::opts_chunk$set(cache = TRUE, width = 120,
-                      fig.align = "left", out.width="98%", 
+knitr::opts_chunk$set(cache = TRUE, 
                       warning = FALSE,
                       message = FALSE, comment = "")
 ```
@@ -39,7 +38,9 @@ Next We illustrate some examples that includes SNP association studies, where in
 
 The general idea is described in the following figure
 
-![Hierarchical model](Figure1.png)
+```{r fig1, fig.cap = "Hierarchical model", echo = FALSE}
+knitr::include_graphics("Figure1.png")
+```
 
 
 
@@ -53,20 +54,23 @@ library(dplyr)
 
 In the GWAS conext, each SNP is associated independently with the phenotype of interest. However, this conventional approach ignores existing information about the analyzed SNPs and assumes that they are all equally likely to impact the phenotype. Instead, one can incorporate information about the SNPs into a hierarchical model, in an attempt to improve the ranking of the p-values for association. There are several ways of incorporating a priori information. For instance, one can weight each SNP association p-value by how well it tags to SNPs that have been previously associated with our phenotype of interest as described in the GWAS catalog ([https://www.ebi.ac.uk/gwas/](https://www.ebi.ac.uk/gwas/)). The genetic distance to these SNPs can also be used. Another option is to incorporate existing information about the SNPs into a second-stage design matrix Z. This information could be: conservation, functional category, gene location, tagging or even linkage. Here we illustrate how genic location depicted in this figure can be used to improve single SNP assocation analyses:
 
-![Genic annotation](SNP_position.png)
+```{r gene, fig.cap = "Genic annotation", fig.align="center", echo = FALSE}
+knitr::include_graphics("SNP_position.png")
+```
+
 
 
 
 Let us illustrate how to do the analyses by using a real data set on obesity. We have genotypes for a total of 73 SNPs measured in 300 idividuals. Data can be loaded directly from the package by:
 
 
-```{r load_data}
+```{r ob_load_data}
 data("obesity", package="HOmics")
 ```
 
 We have two different objects, one for the genotypes and another for the phenotypic variables. Notice that the rownames of both objects perfectly match
 
-```{r check}
+```{r ob_check}
 snps[1:6, 1:5]
 head(ob)
 identical(rownames(ob), rownames(snps))
@@ -74,7 +78,7 @@ identical(rownames(ob), rownames(snps))
 
 Now the idea is to associate each SNP with the obesity status (0: normal, 1: obese) by incorporating information abouth the gene position of each SNP as described in the previous figure. 
 
-```{r rids}
+```{r ob_rids}
 rsids <- colnames(snps)
 head(rsids)
 length(rsids)
@@ -83,7 +87,7 @@ length(rsids)
 One can locate SNPs in and around genes by using some Bioconductor's packages as follows:
 
 
-```{r snps}
+```{r ob_snps}
 library(GenomicRanges)
 library(VariantAnnotation)
 library(TxDb.Hsapiens.UCSC.hg19.knownGene)
@@ -111,14 +115,14 @@ loc.unique <- unique(loc)
 
 This is the information we have after being processed the previous chunk, a GRanges object
 
-```{r show_loc}
+```{r ob_show_loc}
 loc.unique[,c("LOCATION","rs")]
 ``` 
 
 Then the Z matrix providing a priori biological knowledge can be created using this code. Notice that: 1) some SNPs may not be annotated; and 2) a given SNP may have 1 or more than one positions. This is addressed by aggregating Z matrix by the rownames. 
 Notice that SNPs rs2908786 and rs3743772 are in two gene relative locations
 
-```{r make_Z}
+```{r ob_make_Z}
 location <- droplevels(loc.unique$LOCATION)
 Z <- model.matrix(~ 0 + location)
 colnames(Z) <- levels(location)
@@ -134,7 +138,7 @@ head(sort(apply(Z,1,sum), decreasing = TRUE))
 
 Next code illustrates how to fit the hierachical model. We start by selecting from the omic matrix those features with annotated information
 
-```{r Z}
+```{r ob_Z}
 rsids.ok <- rownames(Z)
 omic.matrix <- as.matrix(t(snps[, rsids.ok]))
 ```
@@ -142,13 +146,13 @@ omic.matrix <- as.matrix(t(snps[, rsids.ok]))
 
 Then we create the W matrix which includes the covariates:
 
-```{r covar}
+```{r ob_covar}
 covar.matrix <- model.matrix( ~ gender + age, data=ob)
 ```
 
 Finally the model is fitted by
 
-```{r HOmics}
+```{r ob_HOmics}
 mod <- HOmics(data.matrix = omic.matrix,
               cond = as.factor(ob$obese),
               z.matrix = Z,
@@ -157,12 +161,12 @@ mod <- HOmics(data.matrix = omic.matrix,
 
 The results are provided as an object of class *HOmics*
 
-```{r show_mod}
+```{r ob_show_mod}
 print(mod)
 ```
 Results can be extracted using attribute results
 
-```{r mod_resuts}
+```{r ob_mod_resuts}
 mod$results
 ```
 
@@ -170,13 +174,13 @@ which is a tibble.
 
 To visualize credible intervals
 
-```{r plot_mod}
+```{r ob_plot_mod, fig.height=4, fig.width=4, out.width="100%", fig.align="center"}
 plot(mod)
 ```
 
 We then can compare with the results obtained from single association analyses
 
-```{r SNPassoc}
+```{r ob_SNPassoc}
 library(SNPassoc)
 dd <- cbind(snps, ob)
 ii <- grep("^rs", colnames(dd))
@@ -188,9 +192,9 @@ ans.odds <- odds(ans)
 
 ```
 
-if we now plot SNPassoc OR confidence interval
+if we now plot SNPassoc log-odds confidence interval
 
-```{r SNPassoc_plot}
+```{r ob_SNPassoc_plot, echo = FALSE}
 library(ggplot2)
 
 ans.odds$feature <- factor(rownames(ans.odds), levels=sort(unique(rownames(ans.odds)),decreasing = TRUE)) 
@@ -209,16 +213,22 @@ p
 
 ```
 
-and finally compare results, by selecting those significative by each method. Notice that objects are manipulated differently, as they are of different classes
+and finally compare results, by selecting those significative by each method and transforming SNPassoc results to log-odds.
+Notice that objects are manipulated differently, as they are of different classes
 
-```{r compare results}
+```{r ob_compare_results}
 res.homics <- mod$results[[1]]
-res.homics.sig <- res.homics %>% filter(`97.5%` < 1 & `2.5%` < 1, n.eff>200) %>% mutate(int.l =`97.5%`- `2.5%`) 
+res.homics.sig <- res.homics %>% filter(sign(`97.5%`) ==  sign(`2.5%`), n.eff>200) %>% mutate(int.l =`97.5%`- `2.5%`) 
 res.homics.sig
 
 res.snpassoc <- ans.odds
 res.snpassoc.sig <- res.snpassoc[res.snpassoc$`p-value.log-additive`<0.05 & !is.na(res.snpassoc$`p-value.log-additive`),]
-res.snpassoc.sig$int.l <- res.snpassoc.sig$upper - res.snpassoc.sig$lower
+
+res.snpassoc.sig$log.odds <- log(res.snpassoc.sig$OR)
+res.snpassoc.sig$log.lower <- log(res.snpassoc.sig$lower)
+res.snpassoc.sig$log.upper <- log(res.snpassoc.sig$upper)
+
+res.snpassoc.sig$int.l <- res.snpassoc.sig$log.upper - res.snpassoc.sig$log.lower
 
 res.snpassoc.sig
 
@@ -232,13 +242,15 @@ Observe that significative SNPs associated to obesity are the same but the credi
 Instead of performing a univariate analysis for each feature, we can include all SNPs in a multivariate model to study the association with phenotype.
 For that, the parameter agg.matrix must be specified with groups of features as depicted in the following figure
 
-```{r agg.matrix, out.width = "30%", echo = FALSE}
-knitr::include_graphics("agg.matrix.png")
+```{r ob_aggmatrix, fig.cap = "aggregation matrix", out.width = "50%", echo = FALSE}
+
+knitr::include_graphics("agg_matrix.png")
+
 ```
 
 In this case we will create a 1's matrix containing just one row representing a group and 73 columns, one for each SNP. We therefore consider all features included in this group g1
 
-```{r multiv_mod}
+```{r ob_multiv_mod}
 
 agg.matrix <- matrix(data=1,nrow=1,ncol=nrow(omic.matrix))
 
@@ -261,13 +273,13 @@ If we want to assess more groups, it should be specified in the aggregation matr
 
 The results are again provided as an HOmics object, and results show this time the coefficients for the multivariate model
 
-```{r show_multiv_mod}
+```{r ob_show_multiv_mod}
 mod.multiv$results
 ```
 
 and we plot the coefficients of the multivariate model to visualize credible intervals
 
-```{r plot_multiv_mod}
+```{r ob_plot_multiv_mod, fig.height=4, fig.width=4, out.width="100%", fig.align="center"}
 plot(mod.multiv)
 ```
 
@@ -287,7 +299,7 @@ We will in this example assess an ExpressionSet, extracted from the GEO series G
 
 GSE117929 contains a methylome-wide analysis of 37 samples of peripheral blood mononuclear cells of systemic sclerosis (N=18) and normal controls (N=19).
 
-```{r load_data_bioc}
+```{r meth_load_data_bioc}
 
 library(Biobase)
 
@@ -303,11 +315,11 @@ table(pData(GSE117929)$"diagnosis:ch1")
 The list of genes to model are obtained from [PMC5988798](https://www.nature.com/articles/s41598-018-26894-4), and we just call the function
 
 
-```{r model}
+```{r meth_model}
 
 genes <- c("CCR5","CXCR4")
 
-res.meth <- HOmics.meth(meth.data = GSE117929,
+mod.meth <- HOmics.meth(meth.data = GSE117929,
                    pheno.cond.col = "diagnosis:ch1",
                    annot.gene.col = "UCSC_RefGene_Name",
                    annot.z.col = "UCSC_RefGene_Group",
@@ -315,45 +327,46 @@ res.meth <- HOmics.meth(meth.data = GSE117929,
                    gene.list = genes,
                    cores = 1)
 
-print(res.meth)
+print(mod.meth)
 
 ```
 
 Let us see the results
 
-```{r model_res}
+```{r meth_model_res}
 
-res.meth$results[[1]]
+mod.meth$results[[1]]
 
 ```
 
 We filter the results of those CpGs in genes with high probability of positive coefficients (betas) and also of negative coefficients in the adjusted bayesian hierarchical model. In this example we filter at a significance level of 0.8 for demo purposes.
 
-```{r filter_res}
+```{r meth_filter_res}
 
-res.f.pos <- get.signif(res.meth, param = "p.pos", threshold = 0.8, as.data.frame = T)
+res.f.pos <- filter(mod.meth, param = "p.pos", threshold = 0.8, as.data.frame = T)
 res.f.pos
 
-res.f.neg <- get.signif(res.meth, param = "p.neg", threshold = 0.8, as.data.frame = T)
+res.f.neg <- filter(mod.meth, param = "p.neg", threshold = 0.8, as.data.frame = T)
 res.f.neg
 
 ```
 
-We finally plot 95% probability for the first model.
+We finally plot 95% credibilty interval and use method signif to obtain significant results, ie those features with credibility intervals not containing 0.
 
-```{r plot_res}
+```{r meth_plot_res, fig.height=4, fig.width=4, out.width="100%", fig.align="center"}
 
-plot(res.meth)
+plot(mod.meth)
+signif(mod.meth)
 
 ```
 
 We will adjust the model with sex variable, which is specified in phenoData as 'gender:ch1'
 
-```{r sex model}
+```{r meth_sex_model}
 
 genes <- c("CCR5","CXCR4")
 
-res.meth.sex <- HOmics.meth(meth.data = GSE117929,
+mod.meth.sex <- HOmics.meth(meth.data = GSE117929,
                    pheno.cond.col = "diagnosis:ch1",
                    annot.gene.col = "UCSC_RefGene_Name",
                    annot.z.col = "UCSC_RefGene_Group",
@@ -362,19 +375,170 @@ res.meth.sex <- HOmics.meth(meth.data = GSE117929,
                    gene.list = genes,
                    cores = 1)
 
-class(res.meth.sex)
+class(mod.meth.sex)
 
 ```
 
 And we filter adjusted results
 
-```{r filter_res_sex}
+```{r _methfilter_res_sex}
 
-res.meth.f.sex.pos <- get.signif(res.meth.sex, param = "p.pos", threshold = 0.8, as.data.frame = T)
+res.meth.f.sex.pos <- filter(mod.meth.sex)
 res.meth.f.sex.pos
 
-res.meth.f.sex.neg <- get.signif(res.meth.sex, param = "p.neg", threshold = 0.8, as.data.frame = T)
+res.meth.f.sex.neg <- filter(mod.meth.sex, param="p.neg")
 res.meth.f.sex.neg
+
+```
+
+# Ovarian cancer gene expression and targeted by miRNAs
+
+Gene expression can be modulated by the miRNAs, that bind to genes during transcription. We will see how these binding can modulate the association with phenotype.
+For this example we will work with data from three different sources:
+
+- ExpressionSet obtained from bicoconductor's package `r Biocpkg("curatedovarianData")` 
+- Genes related to ovarian cancer obtained from [The human protein atlas, ovarian cancer](https://www.proteinatlas.org/humanproteome/pathology/ovarian+cancer) and availabel as a data object in **HOmics**
+- Prior information of target miRNA downloaded from TargetScan website (v 7.2  [http://www.targetscan.org/vert_72/](http://www.targetscan.org/vert_72/)) and available as a data object in **HOmics**
+
+We will assess the association with ovarian cancer of genes by fitting a hierarchical model where prior information known about genes are their predicted miRNAs.
+
+```{r ov_eset}
+# BiocManager::install("curatedOvarianData")
+
+library(curatedOvarianData)
+data(TCGA_eset)
+TCGA_eset
+
+```
+
+Notice that TCGA_eset is an object of class *ExpressionSet*.
+We will compare ovarian cancer tumor samples in stage 4 with recurrence versus healthy samples.
+From the original TCGA_eset object, we will extract the expression data and the phenotype variables.
+
+```{r ov_eset_sampleselection}
+
+pheno <- pData(TCGA_eset)
+table(pheno$sample_type)
+
+TCGA_subset <- TCGA_eset[,pheno$sample_type=="healthy" | 
+                           (pheno$sample_type=="tumor" & pheno$tumorstage==4 & pheno$recurrence_status=="recurrence")]
+
+expr.m <- exprs(TCGA_subset)
+dim(expr.m) 
+pheno <- pData(TCGA_subset)
+
+```
+
+Let us obtain the condition vector. 
+
+```{r ov_eset_condition}
+
+cond <- pheno$sample_type
+cond
+
+```
+
+The prior matrix with miRNAs that target our set of genes is obtained from the downloaded information obtained at TargetScan.
+
+```{r ov_mirnas}
+
+data("targets.hs.6.2", package="HOmics")
+
+targets
+
+```
+
+Let's filter the targets to get only those with probability of conserved targeting (P<sub>CT</sub>) > 0.5 and generate the prior information matrix.
+
+```{r ov_mirnas_filter}
+
+targets.f <- targets %>% mutate(PCT= as.numeric(PCT)) %>% filter(PCT >0.5) 
+
+z.table <- table(targets.f$`Gene Symbol`, targets.f$`miR Family`)
+
+z.matrix <- as.matrix(as.data.frame.matrix(z.table))
+
+z.matrix[z.matrix>1]<-1
+
+table(z.matrix) # 0s and 1s only
+
+```
+
+Ovarian specific related genes are stored in a data object
+
+```{r ov.genes}
+
+data("ov.genes", package="HOmics")
+
+ov.genes
+
+```
+
+To make sure that features (in this case genes) in the three data sets are the same, we do:
+
+```{r ov_common_genes}
+
+common.genes <- intersect(intersect(rownames(expr.m), ov.genes$Gene), 
+                          rownames(z.matrix))
+length(common.genes) 
+expr.m <- expr.m[common.genes,]
+z.matrix <- z.matrix[common.genes,]
+
+mod.ov <- HOmics(data.matrix = expr.m,
+              cond = cond,
+              z.matrix = z.matrix)
+
+mod.ov$results[[1]]
+signif(mod.ov)
+
+```
+
+We compare these results with those obtained by standard approaches, limma is used to assess differential expression in the selected genes
+
+
+```{r limma}
+
+library(limma)
+library(Biobase)
+
+cond <-as.factor(cond)
+design<-model.matrix(~0+cond)
+colnames(design) <- gsub("cond","",colnames(design))
+
+fit<-lmFit(expr.m,design)
+contrast.matrix<-makeContrasts(tumor-healthy ,levels=design)
+fit2<-contrasts.fit(fit,contrast.matrix)
+fite<-eBayes(fit2)
+tt<-topTable(fite,coef=1,number=Inf,adjust="BH",confint = TRUE) 
+tt
+res.limma <- tt[tt$P.Value<0.05,]
+
+```
+ 
+Which are less results than those obtained by HOmics
+Plotting results:
+
+```{r plot.ov.model}
+
+plot(mod.ov)
+
+```
+
+```{r limma_plot, echo = FALSE}
+library(ggplot2)
+
+tt$feature <- factor(rownames(tt), levels=sort(unique(rownames(tt)),decreasing = TRUE)) 
+
+p <- ggplot(data=tt) +
+ geom_segment(aes(x= CI.L ,y=feature,xend= CI.L ,yend=feature),
+              arrow=arrow(length=unit(0.15,"cm"),
+                          ends='both')) +
+  geom_vline(linetype   ='dashed',  xintercept = 0) +
+  xlab ("OR 95% confidence interval") + 
+  theme(panel.border = element_blank(),
+        axis.text.y=element_text(size=6),
+        axis.ticks.y = element_blank())
+p
 
 ```
 
