@@ -27,7 +27,7 @@ knitr::opts_chunk$set(cache = TRUE,
 
 # Introduction
 
-**HOmics** package is designed to analyze *omic* data by incorporating biological knowledge aiming to improve effect estimates obtained from single association analyses. Instead of assuming that every *omic* feature is a priori equally likely associated with the outcome of interest, one can quantitatively incorporate existing information about the features into the analysis. The ultimate goal of this approach is to obtain a better rank of features by combining both, the effect estimates from the data and a priori biological knowledge.
+**HOmics** package is designed to analyze *omics* data by incorporating biological knowledge aiming to improve effect estimates obtained from single association analyses. Instead of assuming that every *omic* feature is a priori equally likely associated with the outcome of interest, one can quantitatively incorporate existing information about the features into the analysis. The ultimate goal of this approach is to obtain a better rank of features by combining both, the effect estimates from the data and a priori biological knowledge.
 The data are fitted in a two levels hierarchical model, where the first level is a regression model for the features, whose coefficients are adjusted in a second level using prior information.
 
 **HOmics** uses a Bayesian approach that needs the JAGS (Just Another Gibbs Sampler) environment to be installed. This can be easily done through this link: [http://mcmc-jags.sourceforge.net/](http://mcmc-jags.sourceforge.net/).
