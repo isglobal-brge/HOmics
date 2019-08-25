@@ -11,6 +11,7 @@ author:
 date: "July, 2019"
 output:
   BiocStyle::html_document:
+    fig_caption: yes
     toc: yes
     toc_depth: 3
   BiocStyle::pdf_document:
@@ -31,6 +32,14 @@ knitr::opts_chunk$set(cache = TRUE,
 The data are fitted in a two levels hierarchical model, where the first level is a regression model for the features, whose coefficients are adjusted in a second level using prior information.
 
 **HOmics** uses a Bayesian approach that needs the JAGS (Just Another Gibbs Sampler) environment to be installed. This can be easily done through this link: [http://mcmc-jags.sourceforge.net/](http://mcmc-jags.sourceforge.net/).
+
+To install the package use the following commands:
+
+```{r install, eval=FALSE}
+
+library(devtools)
+install_github("isglobal-brge/HOmics", INSTALL_opts=c("--no-multiarch"))
+```
 
 
 We illustrate the method with five examples: 1) SNP association studies, where information about genic annotations can be incorporated in the analyses in a univariate or 2) multivariate manner, 3) epigenomic gene studies where relative position to the closest gene is incorporated for each CpG using bioconductor's standard classes, 4) gene expression association to ovarian cancer including information about the predicted miRNAs and 5) integration of gene expression with methylation data in the association to phenotype.
@@ -118,7 +127,7 @@ This is the information we have after being processed the previous chunk, a GRan
 loc.unique[,c("LOCATION","rs")]
 ``` 
 
-Then the Z matrix providing a priori biological knowledge can be created using this code. Notice that: 1) some SNPs may not be annotated; and 2) a given SNP may have 1 or more than one positions. This is addressed by adding Z matrix by the rownames. 
+Then the Z matrix providing a priori biological knowledge can be created using the following code. Notice that: 1) some SNPs may not be annotated; and 2) a given SNP may have 1 or more than one relative positions. This is addressed by adding Z matrix by the rownames. 
 Notice that SNPs rs2908786 and rs3743772 are in two gene relative locations:
 
 ```{r ob_make_Z}
@@ -166,7 +175,7 @@ print(mod)
 attributes(mod)
 ```
 
-Results can be extracted using attribute results.
+Results can be extracted using the attribute results.
 
 ```{r ob_mod_resuts}
 mod$results
@@ -176,7 +185,7 @@ which is a list of tibbles.
 
 To visualize credible intervals:
 
-```{r ob_plot_mod, fig.height=4, fig.width=4, out.width="100%", fig.align="center"}
+```{r ob_plot_mod, fig.cap = "\\label{fig:figs}SNP coefficients credible intervals", fig.height=4, fig.width=4, out.width="100%", fig.align="center"}
 plot(mod)
 ```
 
@@ -196,7 +205,7 @@ ans.odds <- odds(ans)
 
 if we now plot SNPassoc log-odds confidence interval
 
-```{r ob_SNPassoc_plot, echo = FALSE}
+```{r ob_SNPassoc_plot, fig.cap = "\\label{fig:figs}SNP coefficients confidence intervals", echo = FALSE}
 library(ggplot2)
 
 ans.odds$feature <- factor(rownames(ans.odds), levels=sort(unique(rownames(ans.odds)),decreasing = TRUE)) 
@@ -215,7 +224,7 @@ p
 
 ```
 
-And finally compare results, by selecting those significative by each method and transforming SNPassoc results to log-odds.
+And finally compare results, by selecting those significative results by each method and transforming SNPassoc results to log-odds.
 Notice that objects are manipulated differently, as they are of different classes:
 
 ```{r ob_compare_results}
@@ -272,7 +281,7 @@ print(mod.multiv)
 
 If we want to assess more groups, it should be specified in the aggregation matrix, with each group as a row.
 
-The results are again provided as a HOmics object, and results show this time the coefficients for the multivariate model
+The results are again provided as an \textit{HOmics} object, and results show this time the coefficients for the multivariate model
 
 ```{r ob_show_multiv_mod}
 mod.multiv$results
@@ -280,7 +289,7 @@ mod.multiv$results
 
 And we plot the coefficients of the multivariate model to visualize credible intervals
 
-```{r ob_plot_multiv_mod, fig.height=4, fig.width=4, out.width="100%", fig.align="center"}
+```{r ob_plot_multiv_mod, fig.cap = "\\label{fig:figs}SNP coefficients credible intervals in the multivariate model", fig.height=4, fig.width=4, out.width="100%", fig.align="center"}
 plot(mod.multiv)
 ```
 
@@ -296,9 +305,9 @@ The function is prepared to process ExpressionSet (BioC) or GenomicRatioSet (min
 
 The relative position of a CpG to the closest gene is in this case the prior information and it is directly extracted from the annotation data of the object.
 
-We will in this example assess an ExpressionSet, extracted from the GEO series GSE117929. Data was previously downloaded using package `r Biocpkg("GEOquery")` and is accessible as data object  as the data object *GSE117929* in **HOmics**. `r Biocpkg("Biobase")` package is needed to manipulate ExpressionSet class objects.
+We will in this example assess an ExpressionSet, extracted from the GEO series GSE117929. Data was previously downloaded using package `r Biocpkg("GEOquery")` and is accessible as the data object *GSE117929* in **HOmics**. `r Biocpkg("Biobase")` package is needed to manipulate ExpressionSet class objects.
 
-GSE117929 contains a methylome-wide analysis of 37 samples of peripheral blood mononuclear cells of systemic sclerosis (N=18) and normal controls (N=19).
+GSE117929 contains a methylome-wide analysis of 37 samples of peripheral blood mononuclear cells of systemic sclerosis (SSc, N=18) and normal controls (NC, N=19).
 
 ```{r meth_load_data_bioc}
 
@@ -352,9 +361,9 @@ res.f.neg
 
 ```
 
-We finally plot 95% credibilty interval and use method signif to obtain significant results, ie those features with credibility intervals not containing 0
+We finally plot 95% credible interval and use method signif to obtain significant results, ie those features with credible intervals not containing 0
 
-```{r meth_plot_res, fig.height=3, fig.width=3, out.width="100%", fig.align="center"}
+```{r meth_plot_res,  fig.cap = "\\label{fig:figs}CpGs coefficients credible intervals", fig.height=3, fig.width=3, out.width="100%", fig.align="center"}
 
 plot(mod.meth)
 signif(mod.meth)
@@ -394,7 +403,7 @@ res.meth.f.sex.neg
 
 # Ovarian cancer gene expression with targeted miRNAs
 
-Gene expression can be modulated by the miRNAs that bind to genes during transcription. We will see how these binding can affect the association with phenotype.
+Gene expression can be modulated by the miRNAs, that bind to genes during transcription. We will see how this binding can affect the association with phenotype.
 For this example we will work with data from three different sources:
 
 - ExpressionSet obtained from bicoconductor's package `r Biocpkg("curatedovarianData")` 
@@ -443,7 +452,7 @@ The prior matrix with miRNAs that target our set of genes is obtained from the d
 
 ```{r ov_mirnas}
 
-data("targets.hs.6.2", package="HOmics")
+data("targets.hs.7.2", package="HOmics")
 
 targets
 
@@ -526,13 +535,13 @@ Which are less results than those obtained by HOmics, even if non adjusted for m
 
 Finally, let us plot the results to see how intervals get adjusted:
 
-```{r plot.ov.model}
+```{r plot.ov.model,  fig.cap = "\\label{fig:figs}Gene coefficients credible intervals using HOmics"}
 
 plot(mod.ov)
 
 ```
 
-```{r limma_plot, echo = FALSE}
+```{r limma_plot, fig.cap = "\\label{fig:figs}Gene coefficients credible intervals using limma", echo = FALSE}
 library(ggplot2)
 
 tt$feature <- factor(rownames(tt), levels=sort(unique(rownames(tt)),decreasing = TRUE)) 

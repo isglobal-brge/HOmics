@@ -26,7 +26,7 @@ plot.HOmics <- function (res, element = 1)
   tit <- ifelse(cont,"95% credible interval (n.eff samples)","log-odds 95% credible interval (n.eff samples)")
     resi$feature <- factor(resi$feature, levels=sort(unique(resi$feature),decreasing = TRUE)) 
     resi <- resi %>% mutate(coef.=ifelse(sign(`97.5%`)== sign(`2.5%`), ifelse(sign(`2.5%`)==1,"pos","neg"),"ns"))
-    resi$'coef.' <- factor(resi$'coef.',levels=c("neg","ns","pos"))
+    resi$'coef.' <- factor(resi$'coef.',levels=c("neg","n.s.","pos"))
     offs <- max(resi$`97.5%`-resi$`2.5%`)*0.1
      
     colors <- c("neg"="#00BA38","ns"="darkgrey","pos"="#F8766D")
