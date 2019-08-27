@@ -39,6 +39,7 @@ plot.HOmics <- function (res, element = 1)
         xlab (tit) + xlim(min(resi$`2.5%`) - offs, max(resi$`97.5%`) + offs) +
         scale_color_manual(values = colors) +
         theme(panel.border = element_blank(),
+             axis.title.x = element_text(size = 7, color="black"),
              axis.text.y = element_text(size = size.text, color="black"),
              axis.ticks.y = element_blank())
  

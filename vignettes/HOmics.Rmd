@@ -10,12 +10,12 @@ author:
     email: juanr.gonzalez@isglobal.org
 date: "July, 2019"
 output:
-  BiocStyle::pdf_document:
-    fig_caption: yes
-    toc_depth: 3
   BiocStyle::html_document:
     fig_caption: yes
     toc: yes
+    toc_depth: 3
+  BiocStyle::pdf_document:
+    fig_caption: yes
     toc_depth: 3
 ---
 
@@ -54,7 +54,7 @@ We illustrate the method with five examples: 1) SNP association studies, where i
 
 The general idea is described in the following figure:
 
-```{r fig1, fig.cap = "Hierarchical model", echo = FALSE}
+```{r fig1, fig.cap = "Hierarchical model. Levels and components of the HOmics hierarchical model.", fig.height=4, fig.width=4, out.width="100%", echo = FALSE}
 knitr::include_graphics("Figure1.png")
 ```
 
@@ -70,7 +70,7 @@ library(dplyr)
 
 In the GWAS conext, each SNP is associated independently with the phenotype of interest. However, this conventional approach ignores existing information about the analyzed SNPs and assumes that they are all equally likely to impact the phenotype. Instead, one can incorporate information about the SNPs into a hierarchical model, in an attempt to improve the ranking of the p-values for association. There are several ways of incorporating a priori information. For instance, one can weight each SNP association p-value by how well it tags to SNPs that have been previously associated with our phenotype of interest as described in the GWAS catalog ([https://www.ebi.ac.uk/gwas/](https://www.ebi.ac.uk/gwas/)). The genetic distance to these SNPs can also be used. Another option is to incorporate existing information about the SNPs into a second-stage design matrix Z. This information could be: conservation, functional category, gene location, tagging or even linkage. Here we illustrate how genic location depicted in this figure can be used to improve single SNP assocation analyses:
 
-```{r gene, fig.cap = "Genic annotation", fig.align="center", echo = FALSE}
+```{r gene, fig.cap = "Genic annotation. Components of the gene with the SNP positions relative to the exonic and intronic gene composition.", fig.align="center", fig.height=4, fig.width=4, out.width="100%", echo = FALSE}
 knitr::include_graphics("SNP_position.png")
 ```
 
@@ -210,7 +210,7 @@ ans.odds <- odds(ans)
 
 if we now plot SNPassoc log-odds confidence interval
 
-```{r obSNPassocPlot, fig.cap = "SNP coefficients confidence intervals. Confidence intervals for the assessed SNPs obtained with SNPassoc.", echo = FALSE}
+```{r obSNPassocPlot, fig.cap = "SNP coefficients confidence intervals. Confidence intervals for the assessed SNPs obtained with SNPassoc.", fig.height=4, fig.width=4, out.width="100%", echo = FALSE}
 library(ggplot2)
 
 ans.odds$feature <- factor(rownames(ans.odds), levels=sort(unique(rownames(ans.odds)),decreasing = TRUE)) 
@@ -258,7 +258,7 @@ Observe that significative SNPs associated to obesity are the same but the credi
 Instead of performing a univariate analysis for each feature, we can include all SNPs in a multivariate model to study the association with phenotype.
 For that, the parameter agg.matrix must be specified with groups of features as depicted in the following figure:
 
-```{r aggmatrix, fig.cap = "aggregation matrix", out.width = "60%", echo = FALSE}
+```{r aggmatrix, fig.cap = "aggregation matrix. aggregation.matrix, where gi represent the groups and fi the features. Black grey indicates feature fi belonging to gi group (1 in the matrix) and pale grey non belonging (0 in the matrix).", out.width = "60%", echo = FALSE}
 
 knitr::include_graphics("agg_matrix.png")
 
@@ -368,7 +368,7 @@ res.f.neg
 
 We finally plot 95% credible interval and use method signif to obtain significant results, ie those features with credible intervals not containing 0
 
-```{r methPlotRes,  fig.cap = "CpGs coefficients credible intervals. Credible intervals for the assessed CpGs obtained with HOmics.", fig.height=3, fig.width=3, out.width="100%", fig.align="center"}
+```{r methPlotRes,  fig.cap = "CpGs coefficients credible intervals. Credible intervals for the assessed CpGs obtained with HOmics.", fig.height=3, fig.width=3, out.width="80%", fig.align="center"}
 
 plot(mod.meth)
 signif(mod.meth)
@@ -540,13 +540,13 @@ Which are less results than those obtained by HOmics, even if non adjusted for m
 
 Finally, let us plot the results to see how intervals get adjusted:
 
-```{r plotOvModel,  fig.cap = "Gene coefficients credible intervals using HOmics. Credible intervals for the assessed genes obtained with HOmics."}
+```{r plotOvModel,  fig.cap = "Gene coefficients credible intervals using HOmics. Credible intervals for the assessed genes obtained with HOmics.",fig.height=4, fig.width=4, out.width="100%"}
 
 plot(mod.ov)
 
 ```
 
-```{r limmaPlot, fig.cap = "Gene coefficients credible intervals using limma.  Confidence intervals for the assessed genes obtained with limma.", echo = FALSE}
+```{r limmaPlot, fig.cap = "Gene coefficients credible intervals using limma. Confidence intervals for the assessed genes obtained with limma.",fig.height=4, fig.width=4, out.width="100%",  echo = FALSE}
 library(ggplot2)
 
 tt$feature <- factor(rownames(tt), levels=sort(unique(rownames(tt)),decreasing = TRUE)) 
