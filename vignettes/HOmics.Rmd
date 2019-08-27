@@ -10,12 +10,12 @@ author:
     email: juanr.gonzalez@isglobal.org
 date: "July, 2019"
 output:
+  BiocStyle::pdf_document:
+    fig_caption: yes
+    toc_depth: 3
   BiocStyle::html_document:
     fig_caption: yes
     toc: yes
-    toc_depth: 3
-  BiocStyle::pdf_document:
-    fig_caption: yes
     toc_depth: 3
 ---
 
@@ -35,10 +35,18 @@ The data are fitted in a two levels hierarchical model, where the first level is
 
 To install the package use the following commands:
 
-```{r install, eval=FALSE}
+* Windows
 
+```{r installW, eval=FALSE}
 library(devtools)
 install_github("isglobal-brge/HOmics", INSTALL_opts=c("--no-multiarch"))
+```
+
+* Linux
+
+```{r installL, eval=FALSE}
+library(devtools)
+install_github("isglobal-brge/HOmics")
 ```
 
 
@@ -65,9 +73,6 @@ In the GWAS conext, each SNP is associated independently with the phenotype of i
 ```{r gene, fig.cap = "Genic annotation", fig.align="center", echo = FALSE}
 knitr::include_graphics("SNP_position.png")
 ```
-
-
-
 
 Let us illustrate how to do the analyses with the first example, using a real data set on obesity. We have genotypes for a total of 73 SNPs measured in 300 idividuals. Data can be loaded directly from the package by
 
@@ -185,7 +190,7 @@ which is a list of tibbles.
 
 To visualize credible intervals:
 
-```{r ob_plot_mod, fig.cap = "\\label{fig:figs}SNP coefficients credible intervals", fig.height=4, fig.width=4, out.width="100%", fig.align="center"}
+```{r obPlotMod, fig.cap = "SNP coefficients credible intervals. Credible intervals for the assessed SNPs obtained with HOmics.", fig.height=4, fig.width=4, out.width="100%", fig.align="center"}
 plot(mod)
 ```
 
@@ -205,7 +210,7 @@ ans.odds <- odds(ans)
 
 if we now plot SNPassoc log-odds confidence interval
 
-```{r ob_SNPassoc_plot, fig.cap = "\\label{fig:figs}SNP coefficients confidence intervals", echo = FALSE}
+```{r obSNPassocPlot, fig.cap = "SNP coefficients confidence intervals. Confidence intervals for the assessed SNPs obtained with SNPassoc.", echo = FALSE}
 library(ggplot2)
 
 ans.odds$feature <- factor(rownames(ans.odds), levels=sort(unique(rownames(ans.odds)),decreasing = TRUE)) 
@@ -289,7 +294,7 @@ mod.multiv$results
 
 And we plot the coefficients of the multivariate model to visualize credible intervals
 
-```{r ob_plot_multiv_mod, fig.cap = "\\label{fig:figs}SNP coefficients credible intervals in the multivariate model", fig.height=4, fig.width=4, out.width="100%", fig.align="center"}
+```{r obPlotMultivMod, fig.cap = "SNP coefficients credible intervals in the multivariate model. Credible intervals for the assessed SNPs obtained with HOmics in the multivariate model.", fig.height=4, fig.width=4, out.width="100%", fig.align="center"}
 plot(mod.multiv)
 ```
 
@@ -363,7 +368,7 @@ res.f.neg
 
 We finally plot 95% credible interval and use method signif to obtain significant results, ie those features with credible intervals not containing 0
 
-```{r meth_plot_res,  fig.cap = "\\label{fig:figs}CpGs coefficients credible intervals", fig.height=3, fig.width=3, out.width="100%", fig.align="center"}
+```{r methPlotRes,  fig.cap = "CpGs coefficients credible intervals. Credible intervals for the assessed CpGs obtained with HOmics.", fig.height=3, fig.width=3, out.width="100%", fig.align="center"}
 
 plot(mod.meth)
 signif(mod.meth)
@@ -535,13 +540,13 @@ Which are less results than those obtained by HOmics, even if non adjusted for m
 
 Finally, let us plot the results to see how intervals get adjusted:
 
-```{r plot.ov.model,  fig.cap = "\\label{fig:figs}Gene coefficients credible intervals using HOmics"}
+```{r plotOvModel,  fig.cap = "Gene coefficients credible intervals using HOmics. Credible intervals for the assessed genes obtained with HOmics."}
 
 plot(mod.ov)
 
 ```
 
-```{r limma_plot, fig.cap = "\\label{fig:figs}Gene coefficients credible intervals using limma", echo = FALSE}
+```{r limmaPlot, fig.cap = "Gene coefficients credible intervals using limma.  Confidence intervals for the assessed genes obtained with limma.", echo = FALSE}
 library(ggplot2)
 
 tt$feature <- factor(rownames(tt), levels=sort(unique(rownames(tt)),decreasing = TRUE)) 
