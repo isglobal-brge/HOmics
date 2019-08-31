@@ -25,13 +25,13 @@ plot.HOmics <- function (res, element = 1)
   cont <- res$cont
   tit <- ifelse(cont,"95% credible interval (n.eff samples)","log-odds 95% credible interval (n.eff samples)")
     resi$feature <- factor(resi$feature, levels=sort(unique(resi$feature),decreasing = TRUE)) 
-    resi <- resi %>% mutate(coef.=ifelse(sign(`97.5%`)== sign(`2.5%`), ifelse(sign(`2.5%`)==1,"pos","neg"),"ns"))
-    resi$'coef.' <- factor(resi$'coef.',levels=c("neg","n.s.","pos"))
+     resi <- resi %>% dplyr::mutate(coef=ifelse(sign(`97.5%`)== sign(`2.5%`), ifelse(sign(`2.5%`)==1,"pos","neg"),"n.s."))
+    resi$coef <- factor(resi$coef,levels=c("neg","n.s.","pos"))
     offs <- max(resi$`97.5%`-resi$`2.5%`)*0.1
      
-    colors <- c("neg"="#00BA38","ns"="darkgrey","pos"="#F8766D")
+    colors <- c("neg"="#00BA38","n.s."="darkgrey","pos"="#F8766D")
     p <- ggplot(data=resi) +
-         geom_segment(aes(x=`2.5%`,y = feature, xend = `97.5%`,yend = feature, color = coef.),
+         geom_segment(aes(x=`2.5%`,y = feature, xend = `97.5%`,yend = feature, color = coef),
                   arrow = arrow(length = unit(0.15,"cm"), ends = 'both')) +
         geom_text(aes(x = `97.5%`, y = feature, label = n.eff, hjust = -0.3), 
                  color = "black", size = size.text*0.352777778) +
@@ -41,8 +41,9 @@ plot.HOmics <- function (res, element = 1)
         theme(panel.border = element_blank(),
              axis.title.x = element_text(size = 7, color="black"),
              axis.text.y = element_text(size = size.text, color="black"),
-             axis.ticks.y = element_blank())
+             axis.ticks.y = element_blank(),
+             legend.title = element_text(size = 7) )
  
-  p
+  p +labs(color = "Significance")
 
 }

@@ -1,5 +1,5 @@
 ---
-title: "HOmics: Hierarchical modelling for omic data analyses"
+title: "HOmics: Hierarchical modelling for omics data analyses"
 author: 
   - name: Lara Nonell
     affiliation:
@@ -8,7 +8,7 @@ author:
     affiliation: 
     - Bioinformatics Research Group in Epidemiology, Barcelona Institute for Global Health, Spain
     email: juanr.gonzalez@isglobal.org
-date: "July, 2019"
+date: "August, 2019"
 output:
   BiocStyle::html_document:
     fig_caption: yes
@@ -54,7 +54,7 @@ We illustrate the method with five examples: 1) SNP association studies, where i
 
 The general idea is described in the following figure:
 
-```{r fig1, fig.cap = "Hierarchical model. Levels and components of the HOmics hierarchical model.", fig.height=4, fig.width=4, out.width="100%", echo = FALSE}
+```{r fig1, fig.cap = "Hierarchical model. Levels and components of the HOmics hierarchical model.", fig.height=4, fig.width=4, out.width="100%", fig.align="center", echo = FALSE}
 knitr::include_graphics("Figure1.png")
 ```
 
@@ -66,7 +66,9 @@ library(dplyr)
 ```
 
 
-# SNP association analyses
+# Incorporating prior knowledge
+
+## Example 1: SNP association analyses
 
 In the GWAS conext, each SNP is associated independently with the phenotype of interest. However, this conventional approach ignores existing information about the analyzed SNPs and assumes that they are all equally likely to impact the phenotype. Instead, one can incorporate information about the SNPs into a hierarchical model, in an attempt to improve the ranking of the p-values for association. There are several ways of incorporating a priori information. For instance, one can weight each SNP association p-value by how well it tags to SNPs that have been previously associated with our phenotype of interest as described in the GWAS catalog ([https://www.ebi.ac.uk/gwas/](https://www.ebi.ac.uk/gwas/)). The genetic distance to these SNPs can also be used. Another option is to incorporate existing information about the SNPs into a second-stage design matrix Z. This information could be: conservation, functional category, gene location, tagging or even linkage. Here we illustrate how genic location depicted in this figure can be used to improve single SNP assocation analyses:
 
@@ -89,7 +91,7 @@ head(ob)
 identical(rownames(ob), rownames(snps))
 ```
 
-Now the idea is to associate each SNP with the obesity status (0: normal, 1: obese) by incorporating information abouth the gene position of each SNP as described in the previous figure. 
+Now the idea is to associate each SNP with the obesity status (0: normal, 1: obese) by incorporating information about the gene position of each SNP as described in the previous figure. 
 
 ```{r ob_rids}
 rsids <- colnames(snps)
@@ -176,7 +178,7 @@ mod <- HOmics(data.matrix = omic.matrix,
 The results are provided as an object of class *HOmics* with several attributes.
 
 ```{r ob_show_mod}
-print(mod)
+mod
 attributes(mod)
 ```
 
@@ -190,7 +192,7 @@ which is a list of tibbles.
 
 To visualize credible intervals:
 
-```{r obPlotMod, fig.cap = "SNP coefficients credible intervals. Credible intervals for the assessed SNPs obtained with HOmics.", fig.height=4, fig.width=4, out.width="100%", fig.align="center"}
+```{r obPlotMod, fig.cap = "HOmics coefficients. Credible intervals for the assessed SNPs obtained with HOmics.", fig.height=4, fig.width=4, out.width="100%", fig.align="center"}
 plot(mod)
 ```
 
@@ -210,7 +212,7 @@ ans.odds <- odds(ans)
 
 if we now plot SNPassoc log-odds confidence interval
 
-```{r obSNPassocPlot, fig.cap = "SNP coefficients confidence intervals. Confidence intervals for the assessed SNPs obtained with SNPassoc.", fig.height=4, fig.width=4, out.width="100%", echo = FALSE}
+```{r obSNPassocPlot, fig.cap = "SNPassoc coefficients. Confidence intervals for the assessed SNPs obtained with SNPassoc.", fig.height=4, fig.width=4, out.width="100%", fig.align="center", echo = FALSE}
 library(ggplot2)
 
 ans.odds$feature <- factor(rownames(ans.odds), levels=sort(unique(rownames(ans.odds)),decreasing = TRUE)) 
@@ -234,11 +236,14 @@ Notice that objects are manipulated differently, as they are of different classe
 
 ```{r ob_compare_results}
 res.homics <- mod$results[[1]]
-res.homics.sig <- res.homics %>% filter(sign(`97.5%`) ==  sign(`2.5%`), n.eff>200) %>% mutate(int.l =`97.5%`- `2.5%`) 
+res.homics.sig <- res.homics %>% 
+                  filter(sign(`97.5%`) ==  sign(`2.5%`), n.eff>200) %>% 
+                  mutate(int.l =`97.5%`- `2.5%`) 
 res.homics.sig
 
 res.snpassoc <- ans.odds
-res.snpassoc.sig <- res.snpassoc[res.snpassoc$`p-value.log-additive`<0.05 & !is.na(res.snpassoc$`p-value.log-additive`),]
+res.snpassoc.sig <- res.snpassoc[res.snpassoc$`p-value.log-additive`<0.05 & 
+                                  !is.na(res.snpassoc$`p-value.log-additive`),]
 
 res.snpassoc.sig$log.odds <- log(res.snpassoc.sig$OR)
 res.snpassoc.sig$log.lower <- log(res.snpassoc.sig$lower)
@@ -253,12 +258,12 @@ res.snpassoc.sig[,c("log.odds","log.lower","log.upper")]
 
 Observe that significative SNPs associated to obesity are the same but the credible intervals (equivalent to confidence intervals) for **HOmics** approach have changed after including prior information. 
 
-# Multivariate SNP association analysis
+## Example 2: Multivariate SNP association analysis
 
 Instead of performing a univariate analysis for each feature, we can include all SNPs in a multivariate model to study the association with phenotype.
 For that, the parameter agg.matrix must be specified with groups of features as depicted in the following figure:
 
-```{r aggmatrix, fig.cap = "aggregation matrix. aggregation.matrix, where gi represent the groups and fi the features. Black grey indicates feature fi belonging to gi group (1 in the matrix) and pale grey non belonging (0 in the matrix).", out.width = "60%", echo = FALSE}
+```{r aggmatrix, fig.cap = "aggregation matrix. aggregation.matrix, where gi represents the group i and fi the feature i. For each feature fi in group gi, dark grey indicates belonging (1 in the matrix) and pale grey indicates non belonging (0 in the matrix).", out.width = "60%", fig.align="center", echo = FALSE}
 
 knitr::include_graphics("agg_matrix.png")
 
@@ -279,14 +284,14 @@ mod.multiv <- HOmics(data.matrix = omic.matrix,
               covar.matrix = covar.matrix,
               agg.matrix = agg.matrix)
 
-print(mod.multiv)
+mod.multiv
 
 ```
 
 
 If we want to assess more groups, it should be specified in the aggregation matrix, with each group as a row.
 
-The results are again provided as an \textit{HOmics} object, and results show this time the coefficients for the multivariate model
+The results are again provided as an *HOmics* object, and results show this time the coefficients for the multivariate model
 
 ```{r ob_show_multiv_mod}
 mod.multiv$results
@@ -294,25 +299,25 @@ mod.multiv$results
 
 And we plot the coefficients of the multivariate model to visualize credible intervals
 
-```{r obPlotMultivMod, fig.cap = "SNP coefficients credible intervals in the multivariate model. Credible intervals for the assessed SNPs obtained with HOmics in the multivariate model.", fig.height=4, fig.width=4, out.width="100%", fig.align="center"}
+```{r obPlotMultivMod, fig.cap = "HOmics coefficients in the multivariate model. Credible intervals for the assessed SNPs obtained with HOmics in the multivariate model.", fig.height=4, fig.width=4, out.width="100%", fig.align="center"}
 plot(mod.multiv)
 ```
 
 
-# CpG methylation analyses using bioconductor's classes
+## Example 3: CpG methylation analyses using bioconductor's classes
 
 In methylomics, CpGs are studied individually in their association to phenotype. However, there is some information that can be added to the model such as their relative position to the gene. We could here perform a similar analysis to the one displayed in previous section but **HOmics** contains a specific function, **HOmics.meth()** that takes advantage of standard Bioconductor classes. 
-The function is prepared to process ExpressionSet (BioC) or GenomicRatioSet (minfi), standard classes when downloading GEO data using the GEOquery package. These objects have the following components:
+The function is prepared to process ExpressionSet (Biobase) or GenomicRatioSet (minfi), standard classes when downloading GEO data using the GEOquery package. These objects have the following components:
 
-- pheno data: information about the variables to analyze phenotype and covariate
-- annotation data: featureData for an ExpressionSet  
+- pheno data: information about the variables to analyze including phenotype and covariates
+- annotation data: information about features (featureData for an ExpressionSet)
 
 
 The relative position of a CpG to the closest gene is in this case the prior information and it is directly extracted from the annotation data of the object.
 
 We will in this example assess an ExpressionSet, extracted from the GEO series GSE117929. Data was previously downloaded using package `r Biocpkg("GEOquery")` and is accessible as the data object *GSE117929* in **HOmics**. `r Biocpkg("Biobase")` package is needed to manipulate ExpressionSet class objects.
 
-GSE117929 contains a methylome-wide analysis of 37 samples of peripheral blood mononuclear cells of systemic sclerosis (SSc, N=18) and normal controls (NC, N=19).
+GSE117929 contains a methylome-wide analysis of 37 samples of peripheral blood mononuclear cells of systemic sclerosis patients (SSc, N=18) and normal controls (NC, N=19).
 
 ```{r meth_load_data_bioc}
 
@@ -342,7 +347,7 @@ mod.meth <- HOmics.meth(meth.data = GSE117929,
                    gene.list = genes,
                    cores = 1)
 
-print(mod.meth)
+mod.meth
 
 ```
 
@@ -354,7 +359,7 @@ mod.meth$results[[1]]
 
 ```
 
-We filter the results of those CpGs in genes with high probability of positive coefficients (betas) and also of negative coefficients in the adjusted bayesian hierarchical model. In this example we filter at a significance level of 0.8 for demo purposes.
+We filter the results of those CpGs in genes with high probability of positive coefficients (betas) and also of negative coefficients in the adjusted Bayesian hierarchical model. In this example we filter at a significance level of 0.8 for demo purposes.
 
 ```{r meth_filter_res}
 
@@ -368,7 +373,7 @@ res.f.neg
 
 We finally plot 95% credible interval and use method signif to obtain significant results, ie those features with credible intervals not containing 0
 
-```{r methPlotRes,  fig.cap = "CpGs coefficients credible intervals. Credible intervals for the assessed CpGs obtained with HOmics.", fig.height=3, fig.width=3, out.width="80%", fig.align="center"}
+```{r methPlotRes,  fig.cap = "HOmics coefficients. Credible intervals for the assessed CpGs obtained with HOmics.", fig.height=3, fig.width=3, out.width="80%", fig.align="center"}
 
 plot(mod.meth)
 signif(mod.meth)
@@ -406,7 +411,7 @@ res.meth.f.sex.neg
 
 ```
 
-# Ovarian cancer gene expression with targeted miRNAs
+## Example 4: Ovarian cancer gene expression with targeted miRNAs
 
 Gene expression can be modulated by the miRNAs, that bind to genes during transcription. We will see how this binding can affect the association with phenotype.
 For this example we will work with data from three different sources:
@@ -426,7 +431,7 @@ TCGA_eset
 
 ```
 
-Notice that TCGA_eset is an object of class *ExpressionSet*.
+Notice that TCGA_eset is an object of class ExpressionSet.
 We will compare ovarian cancer tumor samples in stage 4 with recurrence versus healthy samples.
 From the original TCGA_eset object, we will extract the expression data and the phenotype variables as follows
 
@@ -436,7 +441,9 @@ pheno <- pData(TCGA_eset)
 table(pheno$sample_type)
 
 TCGA_subset <- TCGA_eset[,pheno$sample_type=="healthy" | 
-                           (pheno$sample_type=="tumor" & pheno$tumorstage==4 & pheno$recurrence_status=="recurrence")]
+                           (pheno$sample_type=="tumor" & 
+                              pheno$tumorstage==4 & 
+                              pheno$recurrence_status=="recurrence")]
 
 expr.m <- exprs(TCGA_subset)
 dim(expr.m) 
@@ -540,13 +547,13 @@ Which are less results than those obtained by HOmics, even if non adjusted for m
 
 Finally, let us plot the results to see how intervals get adjusted:
 
-```{r plotOvModel,  fig.cap = "Gene coefficients credible intervals using HOmics. Credible intervals for the assessed genes obtained with HOmics.",fig.height=4, fig.width=4, out.width="100%"}
+```{r plotOvModel,  fig.cap = "HOmics gene coefficients. Credible intervals for the assessed genes obtained with HOmics.",fig.height=4, fig.width=4, fig.align="center", out.width="100%"}
 
 plot(mod.ov)
 
 ```
 
-```{r limmaPlot, fig.cap = "Gene coefficients credible intervals using limma. Confidence intervals for the assessed genes obtained with limma.",fig.height=4, fig.width=4, out.width="100%",  echo = FALSE}
+```{r limmaPlot, fig.cap = "Limma gene coefficients. Confidence intervals for the assessed genes obtained with limma.",fig.height=4, fig.width=4, out.width="100%", fig.align="center",  echo = FALSE}
 library(ggplot2)
 
 tt$feature <- factor(rownames(tt), levels=sort(unique(rownames(tt)),decreasing = TRUE)) 
@@ -566,10 +573,12 @@ p
 
 # Integration of *omics* data
 
+## Example 5: Methylation beta-values integrated to gene expression
+
 In this example, we will use GEO public data from a data superseries (GSE117931) containing methylation data (GSE117929), used in previous example, but also expression data (GSE117928) from the same set of samples. 
 GSE117928 expression data was downloaded as an ExpressionSet using package `r Biocpkg("GEOquery")` and is accessible as the data object *GSE117928* in **HOmics**.
 
-We will integrate methylation of CpGs to the expression of the closest gene in the association of the phenotype variable, composed of 18 systemic sclerosis patients and 19 normal controls. Integration between gene expression and methylation is usually performed by correlations, as for instance, a hypermethylated site in the promoter of the gene can reduce its expression. The prior information will be in this case the correlation between the gene and the CpGs.
+We will integrate methylation of CpGs to the expression of the closest gene in the association with the phenotype variable, composed of 18 systemic sclerosis patients and 19 normal controls. Integration between gene expression and methylation is usually performed by correlations, as for instance, a hypermethylated site in the promoter of the gene can reduce its expression. Therefore, the prior information will be in this case the correlation between the gene and the CpGs.
 
 We will take the same genes as in previous example and will construct a model for each of them.
 
@@ -582,8 +591,6 @@ library(Biobase)
 data("GSE117928", package="HOmics")
 
 GSE117928
-
-table(pData(GSE117928)$"diagnosis:ch1")
 
 ```
 
@@ -604,8 +611,23 @@ table(cond)
 
 ```
 
+The expression matrix is given with the microarray IDs. To transform this into a matrix with Symbols, it is easy to use dplyr functions
 
-Now, the construction of the hierarchical model for each gene will be done with a simple loop, where the z.matrix is constructed as a vector of correlations of the gene and CpGs in the region
+```{r integ_objects_matrix}
+
+expression.t<-as_tibble(expression)
+expression.t <- left_join(fdata.exp %>% dplyr::select(ID,Symbol),
+                      expression.t %>% mutate(ID = rownames(expression)),
+                      by = 'ID')
+
+expression.t <- expression.t %>% 
+                dplyr::select(-ID) %>% 
+                group_by(Symbol) %>% 
+                summarize_all(funs(mean))
+
+```
+
+Now, the construction of the hierarchical model for each gene will be done with a simple loop, where the z.matrix is constructed as a vector of correlations between the gene expression and beta-values of the CpGs in the region
 
 ```{r integ model}
 
@@ -616,15 +638,11 @@ res.gene <- list()
 for(i in 1:n){
   
   gene <- genes[i]
-  gene.annot <- fdata.exp[grep(gene, fdata.exp$Symbol),c("ID","Symbol" )]
+
+  gene.val <- unlist(expression.t %>% filter(Symbol==gene) %>% dplyr::select(-Symbol))
   
-  if (nrow(gene.annot) > 1) {
-    gene.val <- apply(expression[gene.annot$ID,], 2, mean, na.rm = TRUE) 
-  } else {
-    gene.val <- expression[gene.annot$ID,]
-  }
-  
-  cpgs.gene<- fdata.meth[grep(gene, fdata.meth$"UCSC_RefGene_Name"), c("ID","UCSC_RefGene_Name" )]
+  cpgs.gene<- fdata.meth[grep(gene, fdata.meth$"UCSC_RefGene_Name"), 
+                         c("ID","UCSC_RefGene_Name" )]
   cpgs.val <- beta.values[cpgs.gene$ID,]
   
   data.matrix <- as.matrix(t(gene.val))
@@ -639,13 +657,34 @@ for(i in 1:n){
   names(res.gene)[i] <- gene
 }
 
-res.gene.t <- bind_rows(res.gene,.id="group")
+res.gene.t <- bind_rows(res.gene)
 
 res.gene.t
 
 ```
+If we compare these results to limma standard results
+
+```{r limma_int}
+
+expression.sym <- data.frame(expression.t[,-1])
+rownames(expression.sym) <- expression.t$Symbol
+
+cond <-as.factor(cond)
+design<-model.matrix(~0+cond)
+colnames(design) <- gsub("cond","",colnames(design))
+
+fit<-lmFit(expression.sym,design)
+contrast.matrix<-makeContrasts(SSc-NC ,levels=design)
+fit2<-contrasts.fit(fit,contrast.matrix)
+fite<-eBayes(fit2)
+tt<-topTable(fite,coef=1,number=Inf,adjust="BH",confint = TRUE) 
+
+tt[genes,c("logFC","CI.L","CI.R","P.Value","adj.P.Val")]
 
 
+```
+
+We see that, in this case, although significance is the same, credible intervals are wider in the HOmics model in comparison to limma confidence intervals.
 
 # Session info {.unnumbered}
 
